@@ -434,12 +434,18 @@ namespace cxxopts
         return;
       }
 
-      bool negative = match.length(1) > 0;
-      auto base = match.length(2) > 0 ? 16 : 10;
+      constexpr bool is_signed = std::numeric_limits<T>::is_signed;
+      constexpr T nmax = (is_signed ? (T)~((T)1 << (sizeof(T)*8-1)) : (T)~(T)0) / 10;
+      const bool negative = match.length(1) > 0;
+      const auto base = match.length(2) > 0 ? 16 : 10;
+      const char cmax = is_signed ? (negative ? 8 : 7) : 5;
 
       auto value_match = match[3];
 
       value = 0;
+
+      std::cout << "nmax: " << (int)nmax << std::endl
+                << "cmax: " << (int)cmax << std::endl;
 
       for (auto iter = value_match.first; iter != value_match.second; ++iter)
       {
@@ -458,37 +464,25 @@ namespace cxxopts
           digit = *iter - 'A' + 10;
         }
 
-        value = value * base + digit;
+        std::cout << (int)value << ", " << (int)digit << std::endl;
+        if (-value > nmax || (-value == nmax && digit > cmax))
+        {
+          throw argument_incorrect_type(text);
+        }
+
+        value = value * base - digit;
       }
 
-      if (negative)
+      if (!negative)
+      {
+        value = -value;
+      }
+      else
       {
         if (!std::numeric_limits<T>::is_signed)
         {
           throw argument_incorrect_type(text);
         }
-
-        value = -value;
-      }
-
-      // check that it didn't overflow
-      std::ostringstream out;
-      if ( base == 16)
-      {
-        out << "0x" << std::hex;
-      }
-
-      out << value;
-
-      auto lower = text;
-      std::for_each(lower.begin(), lower.end(),
-        [](char& c)
-        {
-          c = std::tolower(c);
-        });
-      if (out.str() != lower)
-      {
-        throw argument_incorrect_type(text);
       }
     }
 
