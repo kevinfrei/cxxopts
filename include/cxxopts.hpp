@@ -415,6 +415,41 @@ namespace cxxopts
     std::basic_regex<char> integer_pattern
       ("(-)?(0x)?([1-9a-zA-Z][0-9a-zA-Z]*)|(0)");
 
+    namespace detail
+    {
+      template <typename T, bool B>
+      struct SignedCheck;
+
+      template <typename T>
+      struct SignedCheck<T, true>
+      {
+        template <typename U>
+        void
+        operator()(U u, const std::string& text)
+        {
+          if (u > std::numeric_limits<T>::max())
+          {
+            throw argument_incorrect_type(text);
+          }
+        }
+      };
+
+      template <typename T>
+      struct SignedCheck<T, false>
+      {
+        template <typename U>
+        void
+        operator()(U, const std::string&) {}
+      };
+
+      template <typename T, typename U>
+      void
+      check_signed_range(U value, const std::string& text)
+      {
+        SignedCheck<T, std::numeric_limits<T>::is_signed>()(value, text);
+      }
+    }
+
     template <typename T>
     void
     integer_parser(const std::string& text, T& value)
@@ -434,18 +469,21 @@ namespace cxxopts
         return;
       }
 
+      // this doesn't work
+      // I think I can tweak this to parse into the
+      // unsigned int type for T
+      // but I don't know what to do with base 16
+
+      using US = typename std::make_unsigned<T>::type;
+
       constexpr bool is_signed = std::numeric_limits<T>::is_signed;
-      constexpr T nmax = (is_signed ? (T)~((T)1 << (sizeof(T)*8-1)) : (T)~(T)0) / 10;
       const bool negative = match.length(1) > 0;
       const auto base = match.length(2) > 0 ? 16 : 10;
-      const char cmax = is_signed ? (negative ? 8 : 7) : 5;
+      constexpr auto umax = std::numeric_limits<US>::max();
 
       auto value_match = match[3];
 
-      value = 0;
-
-      std::cout << "nmax: " << (int)nmax << std::endl
-                << "cmax: " << (int)cmax << std::endl;
+      US result = 0;
 
       for (auto iter = value_match.first; iter != value_match.second; ++iter)
       {
@@ -464,22 +502,23 @@ namespace cxxopts
           digit = *iter - 'A' + 10;
         }
 
-        std::cout << (int)value << ", " << (int)digit << std::endl;
-        if (-value > nmax || (-value == nmax && digit > cmax))
+        if (umax - digit < result)
         {
           throw argument_incorrect_type(text);
         }
 
-        value = value * base - digit;
+        value = value * base + digit;
       }
 
-      if (!negative)
+      detail::check_signed_range<T>(result, text);
+
+      if (negative)
       {
-        value = -value;
+        value = -result;
       }
       else
       {
-        if (!std::numeric_limits<T>::is_signed)
+        if (is_signed)
         {
           throw argument_incorrect_type(text);
         }
