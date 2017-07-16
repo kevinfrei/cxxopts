@@ -425,11 +425,21 @@ namespace cxxopts
       {
         template <typename U>
         void
-        operator()(U u, const std::string& text)
+        operator()(bool negative, U u, const std::string& text)
         {
-          if (u > std::numeric_limits<T>::max())
+          if (negative)
           {
-            throw argument_incorrect_type(text);
+            if (u > U(-std::numeric_limits<T>::min()))
+            {
+              throw argument_incorrect_type(text);
+            }
+          }
+          else
+          {
+            if (u > std::numeric_limits<T>::max())
+            {
+              throw argument_incorrect_type(text);
+            }
           }
         }
       };
@@ -439,14 +449,14 @@ namespace cxxopts
       {
         template <typename U>
         void
-        operator()(U, const std::string&) {}
+        operator()(bool, U, const std::string&) {}
       };
 
       template <typename T, typename U>
       void
-      check_signed_range(U value, const std::string& text)
+      check_signed_range(bool negative, U value, const std::string& text)
       {
-        SignedCheck<T, std::numeric_limits<T>::is_signed>()(value, text);
+        SignedCheck<T, std::numeric_limits<T>::is_signed>()(negative, value, text);
       }
     }
 
@@ -502,26 +512,27 @@ namespace cxxopts
           digit = *iter - 'A' + 10;
         }
 
-        if (umax - digit < result)
+        if (umax - digit < result * base)
         {
           throw argument_incorrect_type(text);
         }
 
-        value = value * base + digit;
+        result = result * base + digit;
       }
 
-      detail::check_signed_range<T>(result, text);
+      detail::check_signed_range<T>(negative, result, text);
 
       if (negative)
       {
+        if (!is_signed)
+        {
+          throw argument_incorrect_type(text);
+        }
         value = -result;
       }
       else
       {
-        if (is_signed)
-        {
-          throw argument_incorrect_type(text);
-        }
+        value = result;
       }
     }
 
