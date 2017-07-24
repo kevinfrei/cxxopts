@@ -1,6 +1,6 @@
 /*
 
-Copyright (c) 2014, 2015, 2016 Jarryd Beck
+Copyright (c) 2014, 2015, 2016, 2017 Jarryd Beck
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -464,7 +464,6 @@ namespace cxxopts
     void
     integer_parser(const std::string& text, T& value)
     {
-      //TODO: exceptions
       std::smatch match;
       std::regex_match(text, match, integer_pattern);
 
@@ -479,17 +478,12 @@ namespace cxxopts
         return;
       }
 
-      // this doesn't work
-      // I think I can tweak this to parse into the
-      // unsigned int type for T
-      // but I don't know what to do with base 16
-
       using US = typename std::make_unsigned<T>::type;
 
+      constexpr auto umax = std::numeric_limits<US>::max();
       constexpr bool is_signed = std::numeric_limits<T>::is_signed;
       const bool negative = match.length(1) > 0;
       const auto base = match.length(2) > 0 ? 16 : 10;
-      constexpr auto umax = std::numeric_limits<US>::max();
 
       auto value_match = match[3];
 
