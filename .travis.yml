@@ -42,15 +42,15 @@ matrix:
             - clang-3.8
             - libc++-dev
           sources: *sources
+  allow_failures:
+    env: >
+      UNICODE_OPTIONS=-DCXXOPTS_USE_UNICODE_HELP=Yes
+      PKG_CONFIG_PATH=/usr/local/opt/icu4c/lib/pkgconfig
+
 script: >
     cmake -DCXXOPTS_BUILD_TESTS=ON -DCMAKE_CXX_COMPILER=$COMPILER
     -DCMAKE_CXX_FLAGS=$CXXFLAGS $UNICODE_OPTIONS .
     && make && make ARGS=--output-on-failure test
-
-allow_failures:
-  env: >
-    UNICODE_OPTIONS=-DCXXOPTS_USE_UNICODE_HELP=Yes
-    PKG_CONFIG_PATH=/usr/local/opt/icu4c/lib/pkgconfig
 
 before_install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update          ; fi
