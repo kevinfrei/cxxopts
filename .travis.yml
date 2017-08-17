@@ -8,6 +8,7 @@ env:
   - >
     UNICODE_OPTIONS=-DCXXOPTS_USE_UNICODE_HELP=Yes
     PKG_CONFIG_PATH=/usr/local/opt/icu4c/lib/pkgconfig
+    CXXFLAGS=-Wno-error
 matrix:
   include:
     - os: linux
@@ -48,5 +49,5 @@ script: >
     && make && make ARGS=--output-on-failure test
 
 before_install:
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update          ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update       ; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install icu4c; fi
