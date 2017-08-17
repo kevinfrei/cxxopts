@@ -49,5 +49,5 @@ script: >
     && make && make ARGS=--output-on-failure test
 
 before_install:
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update       ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update          ; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install icu4c; fi
